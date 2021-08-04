@@ -9,10 +9,10 @@ namespace ShopeBridgeBusiness
 {
     public interface IProductService
     {
-        IList<ProductDto> GetAll();
-        ProductDto GetById(int Id);
-        int Save(ProductDto product);
-        bool Delete(int Id);
-        bool Update(ProductDto product);
+        Task<IList<ProductDto>> GetAll(int pageNo, int countOfRecords);
+        Task<ProductDto> GetById(int Id);
+        Task<int> Save(ProductDto product);
+        Task<bool> Delete(int Id);
+        Task<bool> Update(ProductDto product);
     }
 }

@@ -19,29 +19,29 @@ namespace ShopeBridgeBusiness
         {
             _repo = repo;
         }
-        public IList<ProductDto> GetAll()
+        public async Task<IList<ProductDto>> GetAll(int pageNo, int countOfRecords)
         {
-            return _repo.GetAll();
+            return await _repo.GetAll(pageNo, countOfRecords);
         }
 
-        public ProductDto GetById(int Id)
+        public async Task<ProductDto> GetById(int Id)
         {
-           return _repo.GetById(Id);
+           return await _repo.GetById(Id);
         }
 
-        public int Save(ProductDto product)
+        public async Task<int> Save(ProductDto product)
         {
-            return _repo.Save(product);
+            return await _repo.Save(product);
         }
 
-        public bool Delete(int Id)
+        public async Task<bool> Delete(int Id)
         {
-            return _repo.Delete(Id);
+            return await _repo.Delete(Id);
         }
 
-        public bool Update(ProductDto product)
+        public async Task<bool> Update(ProductDto product)
         {
-            return _repo.Update(product);
+            return await _repo.Update(product);
         }
     }
 }

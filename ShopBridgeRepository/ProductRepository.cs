@@ -3,6 +3,8 @@ using ShopBridge.Data;
 using ShopBridge.Data.Entities;
 using System.Collections.Generic;
 using System.Linq;
+using AutoMapper;
+using System.Threading.Tasks;
 
 namespace ShopBridgeRepository
 {
@@ -12,66 +14,48 @@ namespace ShopBridgeRepository
     public class ProductRepository : IProductRepository
     {
         private ShopBridgeDataContext _context = new ShopBridgeDataContext();
-        public IList<ProductDto> GetAll()
+
+        public ProductRepository()
         {
-            var list = _context.Products.ToList();
-            var dtos = new List<ProductDto>();
-
-            foreach (var p in list)
-            {
-                dtos.Add(new ProductDto
-                {
-                    Description = p.Description,
-                    Id = p.Id,
-                    Name = p.Name,
-                    Price = p.Price
-                });
-            }
-
-            return dtos;
+            AutoMapper.Mapper.Initialize(cfg => cfg.AddProfile<AutomapperProfile>());
+        }
+        public async Task<IList<ProductDto>> GetAll(int pageNo, int countOfRecords)
+        {
+            if (pageNo == 0) pageNo = 1;
+            var skippedCount = (pageNo-1) * countOfRecords;
+            var list = await Task.Run(()=> _context.Products.ToList().Skip(skippedCount).Take(countOfRecords));
+            return  Mapper.Map<IList<ProductDto>>(list);
         }
 
-        public ProductDto GetById(int Id)
+        public async Task<ProductDto> GetById(int Id)
         {
-            var product = _context.Products.FirstOrDefault(x => x.Id == Id);
-
+            var product = await _context.Products.FindAsync(Id);
             if (product == null) return null;
 
-            return new ProductDto
-            {
-                Description = product.Description,
-                Id = product.Id,
-                Name = product.Name,
-                Price = product.Price
-            };
+            return Mapper.Map<ProductDto>(product);
         }
 
-        public int Save(ProductDto product)
+        public async Task<int> Save(ProductDto product)
         {
-            _context.Products.Add(new Product
-            {
-                Description = product.Description,
-                Id = product.Id,
-                Price = product.Price,
-                Name = product.Name
-            });
-            return _context.SaveChanges();
+            var productEntity = Mapper.Map<Product>(product);
+            _context.Products.Add(productEntity);
+            return await _context.SaveChangesAsync();
         }
 
-        public bool Delete(int id)
+        public async Task<bool> Delete(int id)
         {
             bool deleted = false;
             var product = _context.Products.SingleOrDefault(x => x.Id == id);
             if (product != null)
             {
                 _context.Products.Remove(product);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
                 deleted = true;
             }
             return deleted;
         }
 
-        public bool Update(ProductDto product)
+        public async Task<bool> Update(ProductDto product)
         {
             bool updated = false;
             var existing = _context.Products.SingleOrDefault(x => x.Id == product.Id);
@@ -80,7 +64,7 @@ namespace ShopBridgeRepository
                 existing.Name = product.Name;
                 existing.Price = product.Price;
                 existing.Description = product.Description;
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
                 updated = true;
             }
 
