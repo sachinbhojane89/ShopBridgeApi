@@ -29,12 +29,10 @@ namespace ShopeBridge
 
             // 2. Configure the container (register)
             container.Register<IProductService, ProductService>();
-            container.Register<IProductRepository, ProductRepository>(Lifestyle.Singleton);
+            container.Register<IProductRepository, ProductRepository>();
 
             // 3. Verify your configuration
             container.Verify();
-
-            var handler = container.GetInstance<IProductService>();
         }
     }
 }

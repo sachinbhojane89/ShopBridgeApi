@@ -1,7 +1,6 @@
 ﻿using ShopBridge.Contracts;
 using ShopeBridgeBusiness;
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -14,9 +13,10 @@ namespace ShopeBridge.Controllers
     public class ProductController : ApiController
     {
         private IProductService _service = null;
+        private const int MAX_LENGTH = 100;
+
         public ProductController()
         {
-            //Due to some issues I have to make this adjustment to run the application, in normal world this should get automatically created by contructor
             var container = WebApiApplication.container;
             _service = container.GetInstance<IProductService>();
         }
@@ -43,23 +43,13 @@ namespace ShopeBridge.Controllers
                 if (products != null)
                     return Ok(products);
                 else
-                    throw new HttpResponseException(System.Net.HttpStatusCode.NotFound);
+                    return NotFound();
             }
             catch (Exception ex)
             {
                 var response = GenerateErrorResponse(ex, "Error occured while fetching record");
                 throw new HttpResponseException(response);
             }
-
-        }
-
-        private static HttpResponseMessage GenerateErrorResponse(Exception ex, string message)
-        {
-            var response = new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
-            {
-                Content = new StringContent(message + "Stack Trace: " + ex.InnerException)
-            };
-            return response;
         }
 
         /// <summary>
@@ -75,7 +65,7 @@ namespace ShopeBridge.Controllers
                 if (product != null)
                     return Ok(product);
                 else
-                    throw new HttpResponseException(System.Net.HttpStatusCode.NotFound);
+                    return NotFound();
             }
             catch (Exception ex)
             {
@@ -93,10 +83,11 @@ namespace ShopeBridge.Controllers
         {
             try
             {
-                if (product != null)
+                this.ValidateProduct(product);
+                if (ModelState.IsValid)
                     return Ok(await _service.Save(product));
                 else
-                    throw new HttpResponseException(System.Net.HttpStatusCode.BadRequest);
+                    return BadRequest(ModelState);
             }
             catch (Exception ex)
             {
@@ -104,7 +95,7 @@ namespace ShopeBridge.Controllers
                 throw new HttpResponseException(response);
             }
         }
-
+        
         /// <summary>
         /// Method to update records from database
         /// </summary>
@@ -114,10 +105,11 @@ namespace ShopeBridge.Controllers
         {
             try
             {
-                if (value != null)
+                this.ValidateProduct(value);
+                if (ModelState.IsValid)
                     return Ok(await _service.Update(value));
                 else
-                    throw new HttpResponseException(System.Net.HttpStatusCode.BadRequest);
+                    return BadRequest(ModelState);
             }
             catch (Exception ex)
             {
@@ -141,6 +133,41 @@ namespace ShopeBridge.Controllers
             {
                 var response = GenerateErrorResponse(ex, "Error occured while deleting record");
                 throw new HttpResponseException(response);
+            }
+        }
+
+        /// <summary>
+        /// Method to generate exception response
+        /// </summary>
+        /// <param name="ex">exception</param>
+        /// <param name="message">message</param>
+        /// <returns>Error response</returns>
+        private static HttpResponseMessage GenerateErrorResponse(Exception ex, string message)
+        {
+            var response = new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+            {
+                Content = new StringContent(message + "Stack Trace: " + ex)
+            };
+            return response;
+        }
+
+        /// <summary>
+        /// This method validate product
+        /// </summary>
+        /// <param name="product"></param>
+        private void ValidateProduct(ProductDto product)
+        {
+            if (string.IsNullOrEmpty(product.Name))
+            {
+                ModelState.AddModelError("Name", "Name can not be empty");
+            }
+            if (!string.IsNullOrEmpty(product.Description) && product.Description.Length > MAX_LENGTH)
+            {
+                ModelState.AddModelError("Description", "Description should not exceed length "+MAX_LENGTH);
+            }
+            if (product.Price <= 0)
+            {
+                ModelState.AddModelError("Price", "Price should be positive number");
             }
         }
     }
